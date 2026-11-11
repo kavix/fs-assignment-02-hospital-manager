@@ -28,7 +28,7 @@ public class AuthService {
     }
     public UserResponse register(RegisterRequest request) {
         if (users.existsByUsername(request.username())) throw new ApiException(HttpStatus.CONFLICT, "Username already exists");
-        return UserResponse.from(users.save(new AppUser(request.username(), encoder.encode(request.password()), request.role())));
+        return UserResponse.from(users.save(new AppUser(request.username(), request.name(), encoder.encode(request.password()), request.role())));
     }
     public UserResponse me(String username) { return UserResponse.from(find(username)); }
     public List<UserResponse> users() { return users.findAll().stream().map(UserResponse::from).toList(); }
