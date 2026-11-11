@@ -18,6 +18,7 @@ public class DataLoader {
                 users.save(new AppUser("doctor",encoder.encode("Doctor123!"),Role.DOCTOR));
                 users.save(new AppUser("nurse",encoder.encode("Nurse123!"),Role.NURSE));
                 users.save(new AppUser("receptionist",encoder.encode("Reception123!"),Role.RECEPTIONIST));
+                users.save(new AppUser("patient",encoder.encode("Patient123!"),Role.PATIENT));
             }
             if (patients.count() == 0) {
                 Patient p=new Patient();
