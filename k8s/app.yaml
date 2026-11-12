@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hospital-manager
+  namespace: hospital-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hospital-manager
+  template:
+    metadata:
+      labels:
+        app: hospital-manager
+    spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: MYSQL_ROOT_PASSWORD
+          command:
+            - sh
+            - -c
+            - until mysqladmin ping -h mysql -u root -p"$MYSQL_ROOT_PASSWORD" --silent; do sleep 2; done
+      containers:
+        - name: hospital-manager
+          image: ghcr.io/kavix/fs-assignment-02-hospital-manager:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8086
+          env:
+            - name: DATABASE_URL
+              value: jdbc:mysql://mysql:3306/hospitaldb?createDatabaseIfNotExist=true&serverTimezone=UTC
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: MYSQL_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: MYSQL_PASSWORD
+            - name: DDL_AUTO
+              value: update
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: JWT_SECRET
+            - name: PORT
+              value: "8086"
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hospital-manager
+  namespace: hospital-manager
+spec:
+  type: NodePort
+  selector:
+    app: hospital-manager
+  ports:
+    - name: http
+      port: 8086
+      targetPort: http
+      nodePort: 30086
